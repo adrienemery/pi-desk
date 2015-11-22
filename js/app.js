@@ -1,4 +1,4 @@
-BASE_URL = "http://localhost:5000"
+BASE_URL = "http://0.0.0.0:8000"
 POSITION_LIST_ENDPOINT = BASE_URL + '/api/position'
 POSITION_DETAIL_ENDPOINT = POSITION_LIST_ENDPOINT + '/{0}'
 MOVE_UP_ENDPOINT = BASE_URL + '/api/desk/up'

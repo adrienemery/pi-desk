@@ -77,4 +77,4 @@ manager.create_api(Position, methods=['GET', 'POST', 'PATCH', 'DELETE'])
 
 if __name__ == '__main__':
     # start the flask app
-    app.run(debug=True, use_reloader=True)
+    app.run(host='0.0.0.0', port=8000)

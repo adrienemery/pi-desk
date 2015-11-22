@@ -6,9 +6,9 @@ from gpiocrust import Header, OutputPin, InputPin
 
 class Desk(object):
 
-    PWM_PIN = 7
-    UP_PIN = 0
-    DOWN_PIN = 1
+    PWM_PIN = 33
+    UP_PIN = 35
+    DOWN_PIN = 37
     UP = 'up'
     DOWN = 'down'
     STOPPED = 'stopped'
@@ -39,7 +39,7 @@ class Desk(object):
         print 'Moving up'
         if setpoint is None:
             OutputPin(self.DOWN_PIN).value = True
-            OutputPin(self.DOWN_PIN).value = False
+            OutputPin(self.UP_PIN).value = False
         elif setpoint > self.height:
             while abs(self.height - setpoint) < self.threshold:
                 self.update_height()

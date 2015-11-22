@@ -1,17 +1,24 @@
 #!usr/bin/python
+
+# system imports
+import time
+
+# flask imorts
 from flask import Flask, jsonify, request, abort
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.restless import APIManager
 from flask.ext.cors import CORS
 
+from utils import Desk
 
 # initialize flask app
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/desk.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 # allow Cross Origin Requests
 CORS(app)
+desk = Desk()
 
 
 class Position(db.Model):
@@ -33,11 +40,28 @@ def status():
 
 
 @app.route('/api/desk/position/<int:position_id>', methods=['POST'])
-def update_digital_pin(position_id):
-    """ Update the value of the digital pin specified """
+def move_to_position(position_id):
     position = Position.query.get(position_id)
-    print position
-    return jsonify({'height': position.height}), 200
+    desk.move(setpoint=position.height)
+    return jsonify({'height': desk.height}), 200
+
+
+@app.route('/api/desk/up', methods=['POST'])
+def move_up():
+    desk.move_up()
+    return jsonify({'moving': desk.direction}), 200
+
+
+@app.route('/api/desk/down', methods=['POST'])
+def move_down():
+    desk.move_down()
+    return jsonify({'moving': desk.direction}), 200
+
+
+@app.route('/api/desk/stop', methods=['POST'])
+def stop():
+    desk.stop()
+    return jsonify({'moving': 'stopped'}), 200
 
 
 # Create the database tables.

@@ -1,32 +1,85 @@
 import time
 
 # gpiocrust imports
-from gpiocrust import Header, OutputPin, InputPin
+import RPi.GPIO as GPIO
 
+GPIO.setmode(GPIO.BCM)
+# change these as desired - they're the pins connected from the
+# SPI port on the ADC to the Cobbler
+SPICLK = 18
+SPIMISO = 23
+SPIMOSI = 24
+SPICS = 25
+
+# set up the SPI interface pins
+GPIO.setup(SPIMOSI, GPIO.OUT)
+GPIO.setup(SPIMISO, GPIO.IN)
+GPIO.setup(SPICLK, GPIO.OUT)
+GPIO.setup(SPICS, GPIO.OUT)
+
+last_read = 0       # this keeps track of the last potentiometer value
+tolerance = 5       # to keep from being jittery we'll only change
+                    # volume when the pot has moved more than 5 'counts'
+
+# read SPI data from MCP3008 chip, 8 possible adc's (0 thru 7)
+def readadc(adcnum, clockpin, mosipin, misopin, cspin):
+        if ((adcnum > 7) or (adcnum < 0)):
+                return -1
+        GPIO.output(cspin, True)
+
+        GPIO.output(clockpin, False)  # start clock low
+        GPIO.output(cspin, False)     # bring CS low
+
+        commandout = adcnum
+        commandout |= 0x18  # start bit + single-ended bit
+        commandout <<= 3    # we only need to send 5 bits here
+        for i in range(5):
+                if (commandout & 0x80):
+                        GPIO.output(mosipin, True)
+                else:
+                        GPIO.output(mosipin, False)
+                commandout <<= 1
+                GPIO.output(clockpin, True)
+                GPIO.output(clockpin, False)
+
+        adcout = 0
+        # read in one empty bit, one null bit and 10 ADC bits
+        for i in range(12):
+                GPIO.output(clockpin, True)
+                GPIO.output(clockpin, False)
+                adcout <<= 1
+                if (GPIO.input(misopin)):
+                        adcout |= 0x1
+
+        GPIO.output(cspin, True)
+
+        adcout >>= 1       # first bit is 'null' so drop it
+        return adcout
 
 class Desk(object):
 
-    PWM_PIN = 33
-    UP_PIN = 35
-    DOWN_PIN = 37
+    PWM_PIN = 13
+    UP_PIN = 19
+    DOWN_PIN = 26
     UP = 'up'
     DOWN = 'down'
     STOPPED = 'stopped'
     MICROS_TO_INCH = 1/147.0
+    SONAR_ADC_CH = 0
 
     def __init__(self):
+
+        DEBUG = 1
         self.height = None
         self.last_height = None
         self.direction = None
         self.threshold = 3
-        self.header = Header()
-        self.stop()
         self.sensor = None
         self.start_time = None
         self.stop_time = None
 
-    def setup_sonar_sensor(self):
-        self.sensor = InputPin(self.PWM_PIN, bouncetime=20, value=0, callback=self.edge_handler)
+    def __del__(self):
+        GPIO.cleanup()
 
     def move(self, setpoint):
         if setpoint > self.height:
@@ -43,8 +96,8 @@ class Desk(object):
         """
         print 'Moving up'
         if setpoint is None:
-            OutputPin(self.DOWN_PIN).value = True
-            OutputPin(self.UP_PIN).value = False
+            GPIO.output(self.DOWN_PIN, True)
+            GPIO.output(self.UP_PIN, False)
         elif setpoint > self.height:
             while abs(self.height - setpoint) < self.threshold:
                 self.update_height()
@@ -62,8 +115,8 @@ class Desk(object):
         """
         print 'Moving down'
         if setpoint is None:
-            OutputPin(self.UP_PIN).value = True
-            OutputPin(self.DOWN_PIN).value = False
+            GPIO.output(self.UP_PIN, True)
+            GPIO.output(self.DOWN_PIN, False)
 
         elif setpoint < self.height:
             while abs(self.height - setpoint) < self.threshold:
@@ -77,32 +130,11 @@ class Desk(object):
         """
         print 'Stopping'
         # set both output pins to HIGH
-        OutputPin(self.UP_PIN).value = True
-        OutputPin(self.DOWN_PIN).value = True
+        GPIO.output(self.UP_PIN, True)
+        GPIO.output(self.DOWN_PIN, True)
 
-    def edge_handler(self, value):
-        if self.start_time is None:
-            self.start_time = time.clock()
-            return
-        elif self.stop_time is None:
-            self.stop_time = time.clock()
-            return
-        else:
-            total_time_us = (self.stop_time - self.start_time) / 10**6
-            self.height = total_time_us * self.MICROS_TO_INCH
-            # determine the direction of movement
-            # we need to skip the first time around since last_height won't be set
-            if self.last_height is not None:
-                if self.last_height < self.height:
-                    self.direction = self.UP
-                elif self.last_height > self.height:
-                    self.direcetion = self.DOWN
-            # update last height
-            self.last_height = self.height
-            # reset timers
-            self.stop_time = None
-            self.start_time = None
-
-
-if __name__ == '__main__':
-    desk = Desk()
+    def update_height(self):
+        adc_val = readadc(self.SONAR_ADC_CH,  SPICLK, SPIMOSI, SPIMISO, SPICS)
+        voltage = adc_val / 1024.0
+        volts_per_inch = 3.3 / 512.0
+        self.height = voltage / volts_per_inch

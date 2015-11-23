@@ -9,7 +9,7 @@ from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.restless import APIManager
 from flask.ext.cors import CORS
 
-from desk import Desk
+from desk import Desk, GPIO
 
 # initialize flask app
 app = Flask(__name__)
@@ -77,4 +77,8 @@ manager.create_api(Position, methods=['GET', 'POST', 'PATCH', 'DELETE'])
 
 if __name__ == '__main__':
     # start the flask app
-    app.run(host='0.0.0.0', port=8000)
+    try:
+        app.run(host='0.0.0.0', port=8000)
+    except KeyboardInterrupt:
+        del desk
+        GPIO.cleanup()

@@ -17,9 +17,6 @@ GPIO.setup(SPIMISO, GPIO.IN)
 GPIO.setup(SPICLK, GPIO.OUT)
 GPIO.setup(SPICS, GPIO.OUT)
 
-last_read = 0       # this keeps track of the last potentiometer value
-tolerance = 5       # to keep from being jittery we'll only change
-                    # volume when the pot has moved more than 5 'counts'
 
 # read SPI data from MCP3008 chip, 8 possible adc's (0 thru 7)
 def readadc(adcnum, clockpin, mosipin, misopin, cspin):
@@ -97,16 +94,16 @@ class Desk(object):
         Setting the output pin to LOW or False triggers motion in a given direction.
         """
         print 'Moving up'
-        if setpoint is None:
-            GPIO.output(self.DOWN_PIN, True)
-            GPIO.output(self.UP_PIN, False)
-        elif setpoint > self.height:
+        GPIO.output(self.DOWN_PIN, True)
+        GPIO.output(self.UP_PIN, False)
+
+        if setpoint > self.height:
             while abs(self.height - setpoint) < self.threshold:
                 self.update_height()
             self.stop()
         else:
-            raise RuntimeWarning('Cannot move up to a setpoint below current position')
-
+            self.stop()
+            print 'Cannot move up to a setpoint below current position'
 
     def move_down(self, setpoint=None):
         """Move the desk down.
@@ -116,16 +113,16 @@ class Desk(object):
         Setting the output pin to LOW or False triggers motion in a given direction.
         """
         print 'Moving down'
-        if setpoint is None:
-            GPIO.output(self.UP_PIN, True)
-            GPIO.output(self.DOWN_PIN, False)
+        GPIO.output(self.UP_PIN, True)
+        GPIO.output(self.DOWN_PIN, False)
 
-        elif setpoint < self.height:
+        if setpoint < self.height:
             while abs(self.height - setpoint) < self.threshold:
                 self.update_height()
             self.stop()
         else:
-            raise RuntimeWarning('Cannot move down to a setpoint above current position')
+            self.stop()
+            raise print 'Cannot move down to a setpoint above current position'
 
     def stop(self):
         """Stop moving.

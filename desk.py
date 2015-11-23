@@ -101,7 +101,7 @@ class Desk(object):
             GPIO.output(self.DOWN_PIN, True)
             GPIO.output(self.UP_PIN, False)
         elif setpoint > self.height:
-            while abs(self.height - setpoint) < self.threshold:
+            while abs(self.height - setpoint) > self.threshold:
                 self.update_height()
             self.stop()
         else:
@@ -121,7 +121,7 @@ class Desk(object):
             GPIO.output(self.DOWN_PIN, False)
 
         elif setpoint < self.height:
-            while abs(self.height - setpoint) < self.threshold:
+            while abs(self.height - setpoint) > self.threshold:
                 self.update_height()
             self.stop()
         else:
@@ -137,6 +137,6 @@ class Desk(object):
 
     def update_height(self):
         adc_val = readadc(self.SONAR_ADC_CH,  SPICLK, SPIMOSI, SPIMISO, SPICS)
-        voltage = adc_val / 1024.0
+        voltage = (adc_val / 1024.0) * 3.3
         volts_per_inch = 3.3 / 512.0
         self.height = voltage / volts_per_inch

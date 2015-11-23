@@ -76,7 +76,8 @@ class Desk(object):
         self.stop_time = None
         GPIO.setup(self.UP_PIN, GPIO.OUT)
         GPIO.setup(self.DOWN_PIN, GPIO.OUT)
-
+	self.update_height()	
+	
     def __del__(self):
         GPIO.cleanup()
 
@@ -96,9 +97,11 @@ class Desk(object):
         print 'Moving up'
         GPIO.output(self.DOWN_PIN, True)
         GPIO.output(self.UP_PIN, False)
+	
+	if setpoint is None: return
 
         if setpoint > self.height:
-            while abs(self.height - setpoint) > self.threshold:
+            while self.height < setpoint:
                 self.update_height()
             self.stop()
         else:
@@ -115,14 +118,16 @@ class Desk(object):
         print 'Moving down'
         GPIO.output(self.UP_PIN, True)
         GPIO.output(self.DOWN_PIN, False)
-
+	
+	if setpoint is None: return
+	
         if setpoint < self.height:
-            while abs(self.height - setpoint) > self.threshold:
+            while self.height > setpoint:
                 self.update_height()
             self.stop()
         else:
             self.stop()
-            raise print 'Cannot move down to a setpoint above current position'
+            print 'Cannot move down to a setpoint above current position'
 
     def stop(self):
         """Stop moving.

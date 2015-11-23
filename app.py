@@ -9,7 +9,7 @@ from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.restless import APIManager
 from flask.ext.cors import CORS
 
-from utils import Desk
+from desk import Desk
 
 # initialize flask app
 app = Flask(__name__)

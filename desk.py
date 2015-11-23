@@ -21,8 +21,10 @@ class Desk(object):
         self.threshold = 3
         self.header = Header()
         self.stop()
+        self.sensor = None
+
+    def setup_sonar_sensor():
         self.sensor = InputPin(self.PWM_PIN, bouncetime=20, value=0, callback=self.edge_handler)
-        # self.update_height()  # add back in when there is a timeout
 
     def move(self, setpoint):
         if setpoint > self.height:
@@ -98,4 +100,7 @@ class Desk(object):
             # reset timers
             self.stop_time = None
             self.start_time = None
-            
+
+
+if __name__ == '__main__':
+    desk = Desk()

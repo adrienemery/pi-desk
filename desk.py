@@ -77,6 +77,8 @@ class Desk(object):
         self.sensor = None
         self.start_time = None
         self.stop_time = None
+        GPIO.setup(self.UP_PIN, GPIO.OUT)
+        GPIO.setup(self.DOWN_PIN, GPIO.OUT)
 
     def __del__(self):
         GPIO.cleanup()

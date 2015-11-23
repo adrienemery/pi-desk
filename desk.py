@@ -23,7 +23,7 @@ class Desk(object):
         self.stop()
         self.sensor = None
 
-    def setup_sonar_sensor():
+    def setup_sonar_sensor(self):
         self.sensor = InputPin(self.PWM_PIN, bouncetime=20, value=0, callback=self.edge_handler)
 
     def move(self, setpoint):
@@ -78,7 +78,7 @@ class Desk(object):
         OutputPin(self.UP_PIN).value = True
         OutputPin(self.DOWN_PIN).value = True
 
-    def edge_handler(value):
+    def edge_handler(self, value):
         if self.start_time is None:
             self.start_time = time.clock()
             return

@@ -22,6 +22,8 @@ class Desk(object):
         self.header = Header()
         self.stop()
         self.sensor = None
+        self.start_time = None
+        self.stop_time = None
 
     def setup_sonar_sensor(self):
         self.sensor = InputPin(self.PWM_PIN, bouncetime=20, value=0, callback=self.edge_handler)

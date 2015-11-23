@@ -9,7 +9,7 @@ from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.restless import APIManager
 from flask.ext.cors import CORS
 
-from desk import Desk, GPIO
+import desk
 
 # initialize flask app
 app = Flask(__name__)
@@ -18,7 +18,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 # allow Cross Origin Requests
 CORS(app)
-desk = Desk()
+desk = desk.Desk()
 
 
 class Position(db.Model):
@@ -64,6 +64,11 @@ def stop():
     return jsonify({'moving': 'stopped'}), 200
 
 
+@app.route('/api/desk', methods=['GET'])
+def current_height():
+    return jsonify({'height': desk.height}), 200
+
+
 # Create the database tables.
 db.create_all()
 
@@ -81,4 +86,4 @@ if __name__ == '__main__':
         app.run(host='0.0.0.0', port=8000)
     except KeyboardInterrupt:
         del desk
-        GPIO.cleanup()
+        desk.cleanup()

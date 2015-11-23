@@ -1,21 +1,30 @@
 import time
 
 # gpiocrust imports
-import RPi.GPIO as GPIO
+try:
+    import RPi.GPIO as GPIO
+except ImportError:
+    ENV = 'local'
+else:
+    ENV = 'pi'
 
-GPIO.setmode(GPIO.BCM)
-# change these as desired - they're the pins connected from the
-# SPI port on the ADC to the Cobbler
-SPICLK = 18
-SPIMISO = 23
-SPIMOSI = 24
-SPICS = 25
+LOCAL = 'local'
+PI = 'pi'
 
-# set up the SPI interface pins
-GPIO.setup(SPIMOSI, GPIO.OUT)
-GPIO.setup(SPIMISO, GPIO.IN)
-GPIO.setup(SPICLK, GPIO.OUT)
-GPIO.setup(SPICS, GPIO.OUT)
+if ENV == PI:
+    GPIO.setmode(GPIO.BCM)
+    # change these as desired - they're the pins connected from the
+    # SPI port on the ADC to the Cobbler
+    SPICLK = 18
+    SPIMISO = 23
+    SPIMOSI = 24
+    SPICS = 25
+
+    # set up the SPI interface pins
+    GPIO.setup(SPIMOSI, GPIO.OUT)
+    GPIO.setup(SPIMISO, GPIO.IN)
+    GPIO.setup(SPICLK, GPIO.OUT)
+    GPIO.setup(SPICS, GPIO.OUT)
 
 
 # read SPI data from MCP3008 chip, 8 possible adc's (0 thru 7)
@@ -53,6 +62,10 @@ def readadc(adcnum, clockpin, mosipin, misopin, cspin):
         adcout >>= 1       # first bit is 'null' so drop it
         return adcout
 
+def cleanup():
+    if ENV == PI:
+        GPIO.cleanup()
+
 class Desk(object):
 
     PWM_PIN = 13
@@ -63,6 +76,7 @@ class Desk(object):
     STOPPED = 'stopped'
     MICROS_TO_INCH = 1/147.0
     SONAR_ADC_CH = 0
+    SONAR_ORIENTATION = UP
 
     def __init__(self):
 
@@ -74,18 +88,27 @@ class Desk(object):
         self.sensor = None
         self.start_time = None
         self.stop_time = None
-        GPIO.setup(self.UP_PIN, GPIO.OUT)
-        GPIO.setup(self.DOWN_PIN, GPIO.OUT)
-	self.update_height()	
-	
+	    self.update_height()
+        if ENV == PI:
+            GPIO.setup(self.UP_PIN, GPIO.OUT)
+            GPIO.setup(self.DOWN_PIN, GPIO.OUT)
+
     def __del__(self):
-        GPIO.cleanup()
+        if ENV == PI:
+            GPIO.cleanup()
 
     def move(self, setpoint):
-        if setpoint > self.height:
-            self.move_up()
-        elif setpoint < self.height:
-            self.move_down()
+        if self.SONAR_ORIENTATION == UP:
+            if setpoint < self.height:
+                self.move_up()
+            elif setpoint > self.height:
+                self.move_down()
+
+        elif self.SONAR_ORIENTATION == DOWN:
+            if setpoint > self.height:
+                self.move_up()
+            elif setpoint > self.height:
+                self.move_down()
 
     def move_up(self, setpoint=None):
         """Move the desk up.
@@ -95,18 +118,29 @@ class Desk(object):
         Setting the output pin to LOW or False triggers motion in a given direction.
         """
         print 'Moving up'
-        GPIO.output(self.DOWN_PIN, True)
-        GPIO.output(self.UP_PIN, False)
-	
-	if setpoint is None: return
+        if ENV == PI:
+            GPIO.output(self.DOWN_PIN, True)
+            GPIO.output(self.UP_PIN, False)
 
-        if setpoint > self.height:
-            while self.height < setpoint:
-                self.update_height()
-            self.stop()
-        else:
-            self.stop()
-            print 'Cannot move up to a setpoint below current position'
+	    if setpoint is None: return
+
+        if self.SONAR_ORIENTATION == DOWN:
+            if setpoint > self.height:
+                while self.height < setpoint:
+                    self.update_height()
+                self.stop()
+            else:
+                self.stop()
+                print 'Cannot move up to a setpoint below current position'
+
+        elif if self.SONAR_ORIENTATION == UP:
+            if setpoint < self.height:
+                while self.height > setpoint:
+                    self.update_height()
+                self.stop()
+            else:
+                self.stop()
+                print 'Cannot move up to a setpoint below current position'
 
     def move_down(self, setpoint=None):
         """Move the desk down.
@@ -116,29 +150,45 @@ class Desk(object):
         Setting the output pin to LOW or False triggers motion in a given direction.
         """
         print 'Moving down'
-        GPIO.output(self.UP_PIN, True)
-        GPIO.output(self.DOWN_PIN, False)
-	
-	if setpoint is None: return
-	
-        if setpoint < self.height:
-            while self.height > setpoint:
-                self.update_height()
-            self.stop()
-        else:
-            self.stop()
-            print 'Cannot move down to a setpoint above current position'
+        if ENV == PI:
+            GPIO.output(self.UP_PIN, True)
+            GPIO.output(self.DOWN_PIN, False)
+
+        if setpoint is None: return
+
+        if self.SONAR_ORIENTATION == DOWN:
+            if setpoint < self.height:
+                while self.height > setpoint:
+                    self.update_height()
+                self.stop()
+            else:
+                self.stop()
+                print 'Cannot move down to a setpoint above current position'
+        elif if self.SONAR_ORIENTATION == UP:
+            if setpoint > self.height:
+                while self.height < setpoint:
+                    self.update_height()
+                self.stop()
+            else:
+                self.stop()
+                print 'Cannot move down to a setpoint above current position'
+            
 
     def stop(self):
         """Stop moving.
         """
         print 'Stopping'
-        # set both output pins to HIGH
-        GPIO.output(self.UP_PIN, True)
-        GPIO.output(self.DOWN_PIN, True)
+        if ENV == PI:
+            # set both output pins to HIGH
+            GPIO.output(self.UP_PIN, True)
+            GPIO.output(self.DOWN_PIN, True)
 
     def update_height(self):
-        adc_val = readadc(self.SONAR_ADC_CH,  SPICLK, SPIMOSI, SPIMISO, SPICS)
-        voltage = (adc_val / 1024.0) * 3.3
-        volts_per_inch = 3.3 / 512.0
-        self.height = voltage / volts_per_inch
+        if ENV == PI:
+            adc_val = readadc(self.SONAR_ADC_CH,  SPICLK, SPIMOSI, SPIMISO, SPICS)
+            voltage = (adc_val / 1024.0) * 3.3
+            volts_per_inch = 3.3 / 512.0
+            self.height = voltage / volts_per_inch
+
+        else:
+            self.height = 0

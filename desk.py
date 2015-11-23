@@ -88,7 +88,7 @@ class Desk(object):
         self.sensor = None
         self.start_time = None
         self.stop_time = None
-	    self.update_height()
+	self.update_height()
         if ENV == PI:
             GPIO.setup(self.UP_PIN, GPIO.OUT)
             GPIO.setup(self.DOWN_PIN, GPIO.OUT)
@@ -98,17 +98,17 @@ class Desk(object):
             GPIO.cleanup()
 
     def move(self, setpoint):
-        if self.SONAR_ORIENTATION == UP:
+        if self.SONAR_ORIENTATION == self.UP:
             if setpoint < self.height:
-                self.move_up()
+                self.move_up(setpoint)
             elif setpoint > self.height:
-                self.move_down()
+                self.move_down(setpoint)
 
-        elif self.SONAR_ORIENTATION == DOWN:
+        elif self.SONAR_ORIENTATION == self.DOWN:
             if setpoint > self.height:
-                self.move_up()
+                self.move_up(setpoint)
             elif setpoint > self.height:
-                self.move_down()
+                self.move_down(setpint)
 
     def move_up(self, setpoint=None):
         """Move the desk up.
@@ -124,7 +124,7 @@ class Desk(object):
 
 	    if setpoint is None: return
 
-        if self.SONAR_ORIENTATION == DOWN:
+        if self.SONAR_ORIENTATION == self.DOWN:
             if setpoint > self.height:
                 while self.height < setpoint:
                     self.update_height()
@@ -133,7 +133,7 @@ class Desk(object):
                 self.stop()
                 print 'Cannot move up to a setpoint below current position'
 
-        elif if self.SONAR_ORIENTATION == UP:
+        elif self.SONAR_ORIENTATION == self.UP:
             if setpoint < self.height:
                 while self.height > setpoint:
                     self.update_height()
@@ -156,7 +156,7 @@ class Desk(object):
 
         if setpoint is None: return
 
-        if self.SONAR_ORIENTATION == DOWN:
+        if self.SONAR_ORIENTATION == self.DOWN:
             if setpoint < self.height:
                 while self.height > setpoint:
                     self.update_height()
@@ -164,7 +164,7 @@ class Desk(object):
             else:
                 self.stop()
                 print 'Cannot move down to a setpoint above current position'
-        elif if self.SONAR_ORIENTATION == UP:
+        elif self.SONAR_ORIENTATION == self.UP:
             if setpoint > self.height:
                 while self.height < setpoint:
                     self.update_height()

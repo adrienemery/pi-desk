@@ -66,6 +66,7 @@ def stop():
 
 @app.route('/api/desk', methods=['GET'])
 def current_height():
+    desk.update_height()
     return jsonify({'height': desk.height}), 200
 
 

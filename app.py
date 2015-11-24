@@ -42,6 +42,7 @@ def status():
 @app.route('/api/desk/position/<int:position_id>', methods=['POST'])
 def move_to_position(position_id):
     position = Position.query.get(position_id)
+    print 'moving to position:', position.height
     desk.move(setpoint=position.height)
     return jsonify({'height': desk.height}), 200
 

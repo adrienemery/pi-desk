@@ -79,7 +79,6 @@ class Desk(object):
     SONAR_ORIENTATION = UP
 
     def __init__(self):
-
         DEBUG = 1
         self.height = None
         self.last_height = None
@@ -88,7 +87,7 @@ class Desk(object):
         self.sensor = None
         self.start_time = None
         self.stop_time = None
-	self.update_height()
+        self.update_height()
         if ENV == PI:
             GPIO.setup(self.UP_PIN, GPIO.OUT)
             GPIO.setup(self.DOWN_PIN, GPIO.OUT)
@@ -172,7 +171,7 @@ class Desk(object):
             else:
                 self.stop()
                 print 'Cannot move down to a setpoint above current position'
-            
+
 
     def stop(self):
         """Stop moving.

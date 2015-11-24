@@ -1,10 +1,27 @@
 BASE_URL = "http://192.168.0.25:8000"
+// BASE_URL = "http://localhost:8000"
 POSITION_LIST_ENDPOINT = BASE_URL + '/api/position'
 POSITION_DETAIL_ENDPOINT = POSITION_LIST_ENDPOINT + '/{0}'
 MOVE_UP_ENDPOINT = BASE_URL + '/api/desk/up'
 MOVE_DOWN_ENDPOINT = BASE_URL + '/api/desk/down'
+MOVE_TO_POSITION_ENDPOINT = BASE_URL + '/api/desk/position/{0}'
 STOP_ENDPOINT = BASE_URL + '/api/desk/stop'
+DESK_ENDPOINT = BASE_URL + '/api/desk'
 
+var height = null
+var positions = [];
+
+function update_position_list() {
+  var to_append = ''
+  $.each(positions, function(index, position){
+    to_append += '<li class="list-group-item">' + position.name;
+    to_append += '<button type="button" class="btn btn-default btn-sm" onclick="delete_position(' + String(position.id) +  ')"> <span class="glyphicon glyphicon-minus" aria-hidden="true"></span></button>';
+    to_append += '<button type="button" class="btn btn-default btn-sm"> <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></button>';
+    to_append += '<button class="btn btn-sm btn-success" type="button" name="on_btn" onclick="move_to_position(' + String(position.id) + ')">Go</button>';
+    to_append += '</div>  </li>';
+  });
+  $("#posiiton-list").html(to_append);
+}
 
 function get_positions() {
   $.ajax({
@@ -13,11 +30,24 @@ function get_positions() {
       contentType: "application/json",
       dataType: "json",
   }).then(function(data) {
-     console.log(data)
+     console.log(data);
+     positions = data.objects;
+     update_position_list();
+     get_height();
   });
 }
 
-
+function get_height() {
+  $.ajax({
+      url: DESK_ENDPOINT,
+      type: "GET",
+      contentType: "application/json",
+      dataType: "json",
+  }).then(function(data) {
+     console.log(data);
+     height = data.height
+  });
+}
 
 $("#down_btn")
   .mouseup(function() {
@@ -50,6 +80,7 @@ function move_up() {
       dataType: "json",
   }).then(function(data) {
      console.log(data);
+     get_height();
      return data;
   });
 };
@@ -58,6 +89,20 @@ function move_up() {
 function move_down() {
   $.ajax({
       url: MOVE_DOWN_ENDPOINT,
+      type: "POST",
+      contentType: "application/json",
+      dataType: "json",
+  }).then(function(data) {
+     console.log(data);
+     get_height();
+     return data;
+  });
+};
+
+function move_to_position(position_id) {
+  url = String.format(MOVE_TO_POSITION_ENDPOINT, position_id)
+  $.ajax({
+      url: url,
       type: "POST",
       contentType: "application/json",
       dataType: "json",
@@ -76,10 +121,10 @@ function stop_desk() {
       dataType: "json",
   }).then(function(data) {
      console.log(data);
+     get_height();
      return data;
   });
 };
-
 
 
 function add_position() {
@@ -106,6 +151,9 @@ function add_position() {
 
 
 function create_position(position_data) {
+  if (position_data.height == "") {
+    position_data.height = height;
+  }
   $.ajax({
       url: POSITION_LIST_ENDPOINT,
       type: "POST",
@@ -114,7 +162,21 @@ function create_position(position_data) {
       dataType: "json",
   }).then(function(data) {
      console.log(data);
+     get_positions();
      return data;
+  });
+}
+
+
+function delete_position(position_id) {
+  url = String.format(POSITION_DETAIL_ENDPOINT, position_id)
+  $.ajax({
+      url: url,
+      type: "DELETE",
+      contentType: "application/json",
+      dataType: "json",
+  }).then(function(data) {
+     get_positions();
   });
 }
 
